@@ -19,7 +19,8 @@
     "test": "jest",
     "clean": "rm -rf ./node_modules .cache dist",
     "reinstall": "npm run clean && npm i",
-    "script": "npm run build:local && cross-env NODE_ENV=local node dist/scripts/runner.js"
+    "script": "npm run build:local && cross-env NODE_ENV=local node dist/scripts/runner.js",
+    "migrate": "cross-env NODE_ENV=local ts-node scripts/run-migrations.ts"
   },
   "keywords": [],
   "author": "",
@@ -32,6 +33,7 @@
     "cross-env": "^7.0.3",
     "eslint": "^9.30.1",
     "prettier": "^3.6.2",
+    "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   },
   "dependencies": {

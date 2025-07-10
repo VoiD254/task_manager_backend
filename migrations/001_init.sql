@@ -1,0 +1,21 @@
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+  name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  createdAt TIMESTAMPTZ DEFAULT NOW (),
+  updatedAt TIMESTAMPTZ DEFAULT NOW ()
+);
+
+CREATE TABLE todos (
+  todoId UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+  userId UUID REFERENCES users (id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  todoDescription TEXT,
+  isCompleted BOOLEAN DEFAULT FALSE,
+  isSynced BOOLEAN DEFAULT FALSE,
+  isMarkedForDeletion BOOLEAN DEFAULT FALSE,
+  createdAt TIMESTAMPTZ DEFAULT NOW (),
+  updatedAt TIMESTAMPTZ DEFAULT NOW ()
+);
