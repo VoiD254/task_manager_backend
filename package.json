@@ -8,12 +8,12 @@
     "build:local": "bash build-scripts/build-local.sh",
     "build:prod": "bash build-scripts/build-prod.sh",
     "build:dist": "tsc",
-    "dev": "npm run build:dev && cross-env NODE_ENV=development node ./dist/server",
-    "local": "npm run build:local && cross-env NODE_ENV=local node ./dist/server",
-    "prod": "npm run build:prod && cross-env NODE_ENV=production node ./dist/server",
-    "start:dev": "cross-env NODE_ENV=development node ./dist/server",
-    "start:local": "cross-env NODE_ENV=local node ./dist/server",
-    "start:prod": "cross-env NODE_ENV=production node ./dist/server",
+    "dev": "npm run build:dev && cross-env NODE_ENV=development node ./dist/server.js",
+    "local": "npm run build:local && cross-env NODE_ENV=local node ./dist/server.js",
+    "prod": "npm run build:prod && cross-env NODE_ENV=production node ./dist/server.js",
+    "start:dev": "cross-env NODE_ENV=development node ./dist/server.js",
+    "start:local": "cross-env NODE_ENV=local node ./dist/server.js",
+    "start:prod": "cross-env NODE_ENV=production node ./dist/server.js",
     "format:check": "prettier src *.ts --check",
     "format": "prettier src *.ts --write",
     "test": "jest",
@@ -27,7 +27,9 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
     "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.0.10",
     "@types/pg": "^8.15.4",
     "cross-env": "^7.0.3",
@@ -39,10 +41,13 @@
   "dependencies": {
     "@types/cors": "^2.8.19",
     "@types/morgan": "^1.9.10",
+    "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.0.1",
     "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "zod": "^3.23.8"
   }
 }

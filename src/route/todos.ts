@@ -3,7 +3,7 @@ import { getTodos, createTodo } from "../services/todos";
 
 const router = Router();
 
-router.get("/", getTodos);
-router.post("/", createTodo);
+router.get("/getTodos", getTodos);
+router.post("/createTodo", createTodo);
 
 export default router;
