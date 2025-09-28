@@ -6,9 +6,8 @@ services:
       dockerfile: docker/Dockerfile
     ports:
       - "3000:3000"
-    environment:
-      - PORT=3000
-      - DATABASE_URL=postgresql://postgres:postgresPass24@db:5432/task_manager
+    env_file:
+      - ./config/.local.env
     depends_on:
       - db
     volumes:
@@ -19,12 +18,10 @@ services:
     image: postgres:17
     container_name: postgres_container
     restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgresPass24
-      POSTGRES_DB: task_manager
+    env_file:
+      - ./config/.local.env
     ports:
-      - "5431:5431"
+      - "5431:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
