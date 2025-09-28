@@ -1,5 +1,5 @@
 import express from "express";
-import todoRoutes from "./src/route/todos";
+import tasksRoutes from "./src/route/tasks";
 import userRoutes from "./src/route/user";
 import configuration from "./configuration";
 import { initializeAppEnvironment } from "./src/dependency";
@@ -14,11 +14,11 @@ app.use(morgan("dev"));
 app.use(cors());
 
 app.use("/api/v1/user", userRoutes);
-app.use("/api/v1/todos", todoRoutes);
+app.use("/api/v1/tasks", tasksRoutes);
 console.log("User routes loaded!");
 
 app.get("/", (req, res) => {
-  res.send("Welcome to the ToDo app server!");
+  res.send("Welcome to the Task manager app server!");
 });
 
 app.use(
@@ -42,7 +42,7 @@ initializeAppEnvironment()
     console.log("All Dependencies Initialized");
     app.listen(configuration.PORT, () => {
       console.log(
-        `ToDo worker ${process.pid} is listening at http://${configuration.HOST}:${configuration.PORT}`,
+        `Task manager worker ${process.pid} is listening at http://${configuration.HOST}:${configuration.PORT}`,
       );
     });
   })

@@ -1,18 +1,21 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+  userId UUID PRIMARY KEY DEFAULT gen_random_uuid (),
   name TEXT NOT NULL,
   email TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL,
   createdAt TIMESTAMPTZ DEFAULT NOW (),
   updatedAt TIMESTAMPTZ DEFAULT NOW ()
 );
 
-CREATE TABLE IF NOT EXISTS todos (
+CREATE TABLE IF NOT EXISTS tasks (
   todoId UUID PRIMARY KEY DEFAULT gen_random_uuid (),
-  userId UUID REFERENCES users (id) ON DELETE CASCADE,
+  userId UUID REFERENCES users(userId) ON DELETE CASCADE,
   title TEXT NOT NULL,
   todoDescription TEXT,
+  taskDate DATE NOT NULL,
+  notes TEXT,
   isCompleted BOOLEAN DEFAULT FALSE,
   isSynced BOOLEAN DEFAULT FALSE,
   isMarkedForDeletion BOOLEAN DEFAULT FALSE,

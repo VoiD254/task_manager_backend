@@ -38,7 +38,7 @@ const signup = async (req: Request, res: Response): Promise<void> => {
 
     const token = jwt.sign(
       {
-        id: newUser.id,
+        userId: newUser.userId,
         email: newUser.email,
       },
       JWT_SECRET,
@@ -46,7 +46,7 @@ const signup = async (req: Request, res: Response): Promise<void> => {
     );
 
     res.status(201).json({
-      id: newUser.id,
+      userId: newUser.userId,
       name: newUser.name,
       email: newUser.email,
       token,
@@ -93,7 +93,7 @@ const signin = async (req: Request, res: Response): Promise<void> => {
 
     const token = jwt.sign(
       {
-        id: user.id,
+        userId: user.userId,
         email: user.email,
       },
       JWT_SECRET,
@@ -101,7 +101,7 @@ const signin = async (req: Request, res: Response): Promise<void> => {
     );
 
     res.status(200).json({
-      id: user.id,
+      userId: user.userId,
       name: user.name,
       email: user.email,
       token,

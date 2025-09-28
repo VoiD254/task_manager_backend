@@ -1,5 +1,5 @@
 {
-  "name": "todo_backend",
+  "name": "task_manager_backend",
   "version": "1.0.0",
   "scripts": {
     "type": "module",

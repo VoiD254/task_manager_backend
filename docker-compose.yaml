@@ -1,0 +1,32 @@
+services:
+  backend:
+    container_name: task_backend
+    build:
+      context: ./
+      dockerfile: docker/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DATABASE_URL=postgresql://postgres:postgresPass24@db:5432/task_manager
+    depends_on:
+      - db
+    volumes:
+      - ./:/app
+      - /app/node_modules
+
+  db:
+    image: postgres:17
+    container_name: postgres_container
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgresPass24
+      POSTGRES_DB: task_manager
+    ports:
+      - "5431:5431"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
