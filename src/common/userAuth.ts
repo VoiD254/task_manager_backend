@@ -7,15 +7,17 @@ if (!configuration.JWT_SECRET) {
 
 const JWT_SECRET = configuration.JWT_SECRET;
 
-export const getUserIdFromToken = (authHeader: string | undefined): string | null => {
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+export const getUserIdFromToken = (
+  authHeader: string | undefined,
+): string | null => {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return null;
   }
-  
+
   try {
     const token = authHeader.substring(7); // Remove "Bearer " prefix
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
-    return decoded.id;
+    const decoded = jwt.verify(token, JWT_SECRET) as { sub: string };
+    return decoded.sub;
   } catch (error) {
     return null;
   }

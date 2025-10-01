@@ -1,11 +1,10 @@
-import bcrypt from "bcrypt";
 import pool from "../../dependency/pg";
+import { CreateUserInput } from "./interface";
 
-async function createUser(name: string, email: string, password: string) {
-  const hashedPassword = await bcrypt.hash(password, 10);
+async function createUser(data: CreateUserInput) {
   const result = await pool.query(
-    "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING userId, name, email",
-    [name, email, password],
+    "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING user_id, name, email",
+    [data.name, data.email, data.password],
   );
 
   return result.rows[0];

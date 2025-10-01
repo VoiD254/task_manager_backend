@@ -20,7 +20,8 @@
     "clean": "rm -rf ./node_modules .cache dist",
     "reinstall": "npm run clean && npm i",
     "script": "npm run build:local && cross-env NODE_ENV=local node dist/scripts/runner.js",
-    "migrate": "cross-env NODE_ENV=local ts-node scripts/run-migrations.ts"
+    "migrate": "cross-env NODE_ENV=local ts-node scripts/run-migrations.ts",
+    "debug:local": "cross-env NODE_ENV=local node --inspect-brk -r ts-node/register server.ts"
   },
   "keywords": [],
   "author": "",

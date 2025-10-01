@@ -1,8 +1,9 @@
 import { Router } from "express";
-// import {} from "../services/tasks"; will get tasks from here
+import { authenticate } from "../dependency/middleware/auth/auth";
+import { createTask } from "../services/tasks";
 
 const router = Router();
 
-// route tasks
+router.post("/create", authenticate, createTask);
 
 export default router;

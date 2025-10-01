@@ -1,9 +1,15 @@
 import { Request, Response } from "express";
-import { SigninSchema, SignupSchema } from "./interface";
+import {
+  SigninInput,
+  SigninSchema,
+  SignupInput,
+  SignupSchema,
+} from "./validation";
 import { createUser, findUserByEmail } from "./dao";
 import bcrypt from "bcrypt";
 import configuration from "../../../configuration";
 import jwt from "jsonwebtoken";
+import { AuthResponse } from "./interface";
 
 if (!configuration.JWT_SECRET) {
   throw new Error("JWT_SECRET is not defined in configuration");
@@ -21,7 +27,7 @@ const signup = async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  const { name, email, password } = parse.data;
+  const { name, email, password } = parse.data as SignupInput;
 
   try {
     const existing = await findUserByEmail(email);
@@ -34,27 +40,31 @@ const signup = async (req: Request, res: Response): Promise<void> => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await createUser(name, email, hashedPassword);
+    const newUser = await createUser({
+      name,
+      email,
+      password: hashedPassword,
+    });
 
     const token = jwt.sign(
       {
-        userId: newUser.userId,
-        email: newUser.email,
+        sub: newUser.user_id,
       },
       JWT_SECRET,
-      { expiresIn: "1h" },
+      { expiresIn: "7d" },
     );
 
-    res.status(201).json({
-      userId: newUser.userId,
+    const response: AuthResponse = {
+      user_id: newUser.user_id,
       name: newUser.name,
       email: newUser.email,
       token,
-    });
+    };
+
+    res.status(201).json(response);
   } catch (err) {
     res.status(500).json({
       message: "Internal server error",
-      error: err,
     });
   }
 };
@@ -70,7 +80,7 @@ const signin = async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  const { email, password } = parse.data;
+  const { email, password } = parse.data as SigninInput;
 
   try {
     const user = await findUserByEmail(email);
@@ -93,23 +103,23 @@ const signin = async (req: Request, res: Response): Promise<void> => {
 
     const token = jwt.sign(
       {
-        userId: user.userId,
-        email: user.email,
+        sub: user.user_id,
       },
       JWT_SECRET,
-      { expiresIn: "1h" },
+      { expiresIn: "7d" },
     );
 
-    res.status(200).json({
-      userId: user.userId,
+    const response: AuthResponse = {
+      user_id: user.user_id,
       name: user.name,
       email: user.email,
       token,
-    });
+    };
+
+    res.status(200).json(response);
   } catch (err) {
     res.status(500).json({
       message: "Internal server Error",
-      error: err,
     });
   }
 };
