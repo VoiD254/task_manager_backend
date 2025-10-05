@@ -4,16 +4,21 @@ import {
   createTaskDao,
   getTaskById,
   getTasksByUserId,
+  softDeleteTaskById,
+  softDeleteTasksByDate,
   updateTaskDao,
 } from "./dao";
 import {
   CreateTaskInput,
   CreateTaskSchema,
-  GetTaskByIdSchema,
+  TaskByIdSchema,
   GetTasksInput,
   GetTasksSchema,
   UpdateTaskInput,
   UpdateTaskSchema,
+  TaskByIdInput,
+  DeleteTasksByDateSchema,
+  DeleteTasksByDateInput,
 } from "./validation";
 
 // "hh:mm AM/PM" to "HH:MM:SS" 24-hour format
@@ -91,7 +96,7 @@ const getTasks = async (req: Request, res: Response) => {
 
 const getTask = async (req: Request, res: Response) => {
   try {
-    const parsed = GetTaskByIdSchema.safeParse(req.params);
+    const parsed = TaskByIdSchema.safeParse(req.params);
     if (!parsed.success) {
       return res.status(400).json({
         message: "Parsing Error",
@@ -99,7 +104,7 @@ const getTask = async (req: Request, res: Response) => {
       });
     }
 
-    const { task_id } = parsed.data;
+    const { task_id } = parsed.data as TaskByIdInput;
 
     const user_id = req.user?.user_id;
 
@@ -195,4 +200,67 @@ const updateTask = async (req: Request, res: Response) => {
   }
 };
 
-export { createTask, getTasks, getTask, updateTask };
+const deleteTaskById = async (req: Request, res: Response) => {
+  try {
+    const user_id = req.user?.user_id;
+
+    const parsedData = TaskByIdSchema.safeParse(req.params);
+    if (!parsedData.success) {
+      return res.status(400).json({
+        message: "Parsing Error",
+        errors: parsedData.error.errors,
+      });
+    }
+
+    const { task_id } = parsedData.data as TaskByIdInput;
+
+    const deleted = await softDeleteTaskById(user_id, task_id);
+    if (!deleted) {
+      return res.status(404).json({
+        message: "Task Not Found or already deleted",
+      });
+    }
+
+    return res.status(200).json(deleted);
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+};
+
+const deleteTasksByDate = async (req: Request, res: Response) => {
+  try {
+    const user_id = req.user?.user_id;
+
+    const parsed = DeleteTasksByDateSchema.safeParse(req.params);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Parsing Error",
+        errors: parsed.error.errors,
+      });
+    }
+
+    const { task_date } = parsed.data as DeleteTasksByDateInput;
+
+    const deletedTasks = await softDeleteTasksByDate(user_id, task_date);
+
+    return res.status(200).json({
+      message: `${deletedTasks.length} task(s) deleted successfully`,
+      deletedTasks,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+};
+
+export {
+  createTask,
+  getTasks,
+  getTask,
+  updateTask,
+  deleteTaskById,
+  deleteTasksByDate,
+};

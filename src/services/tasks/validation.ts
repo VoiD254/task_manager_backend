@@ -26,11 +26,11 @@ const GetTasksSchema = z.object({
 
 type GetTasksInput = z.infer<typeof GetTasksSchema>;
 
-const GetTaskByIdSchema = z.object({
+const TaskByIdSchema = z.object({
   task_id: z.string().uuid("Invalid task ID"),
 });
 
-type GetTaskByIdInput = z.infer<typeof GetTaskByIdSchema>;
+type TaskByIdInput = z.infer<typeof TaskByIdSchema>;
 
 const UpdateTaskSchema = z.object({
   title: z.string().max(60).optional(),
@@ -51,13 +51,23 @@ const UpdateTaskSchema = z.object({
 
 type UpdateTaskInput = z.infer<typeof UpdateTaskSchema>;
 
+const DeleteTasksByDateSchema = z.object({
+  task_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format, use yyyy-mm-dd"),
+});
+
+type DeleteTasksByDateInput = z.infer<typeof DeleteTasksByDateSchema>;
+
 export {
   CreateTaskSchema,
   CreateTaskInput,
   GetTasksSchema,
   GetTasksInput,
-  GetTaskByIdSchema,
-  GetTaskByIdInput,
+  TaskByIdSchema,
+  TaskByIdInput,
   UpdateTaskSchema,
   UpdateTaskInput,
+  DeleteTasksByDateSchema,
+  DeleteTasksByDateInput,
 };
