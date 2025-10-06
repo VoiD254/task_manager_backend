@@ -59,6 +59,25 @@ const DeleteTasksByDateSchema = z.object({
 
 type DeleteTasksByDateInput = z.infer<typeof DeleteTasksByDateSchema>;
 
+const TasksSyncSchema = z.object({
+  task_id: z.string().uuid(),
+  title: z.string(),
+  task_description: z.string().nullable().optional(),
+  task_date_time: z.string(),
+  notes: z.string().nullable().optional(),
+  is_completed: z.boolean().default(false),
+  is_synced: z.boolean().default(false),
+  is_marked_for_deletion: z.boolean().default(false),
+  updated_at: z.coerce.date(),
+  created_at: z.coerce.date(),
+});
+
+const SyncTasksSchema = z.object({
+  tasks: z.array(TasksSyncSchema),
+});
+
+type SyncTasksInput = z.infer<typeof SyncTasksSchema>;
+
 export {
   CreateTaskSchema,
   CreateTaskInput,
@@ -70,4 +89,6 @@ export {
   UpdateTaskInput,
   DeleteTasksByDateSchema,
   DeleteTasksByDateInput,
+  SyncTasksSchema,
+  SyncTasksInput,
 };

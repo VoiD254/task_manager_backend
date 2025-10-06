@@ -1,9 +1,12 @@
 import { Request, Response } from "express";
-import { CreateTask, UpdateTask } from "./interface";
+import { ACTION, CreateTask, SyncedTask, UpdateTask } from "./interface";
 import {
   createTaskDao,
+  createTaskDaoForSync,
   getTaskById,
   getTasksByUserId,
+  hardDeleteSoftDeletedTasks,
+  markTasksAsSynced,
   softDeleteTaskById,
   softDeleteTasksByDate,
   updateTaskDao,
@@ -19,7 +22,10 @@ import {
   TaskByIdInput,
   DeleteTasksByDateSchema,
   DeleteTasksByDateInput,
+  SyncTasksSchema,
+  SyncTasksInput,
 } from "./validation";
+import pool from "../../dependency/pg";
 
 // "hh:mm AM/PM" to "HH:MM:SS" 24-hour format
 const convertTo24Hour = (time: string): string => {
@@ -185,7 +191,7 @@ const updateTask = async (req: Request, res: Response) => {
               existingTask.task_date_time,
               task_date,
               task_time,
-            ).toISOString(),
+            ),
           }
         : {}),
     };
@@ -256,6 +262,133 @@ const deleteTasksByDate = async (req: Request, res: Response) => {
   }
 };
 
+const syncTasks = async (req: Request, res: Response) => {
+  const user_id = req.user?.user_id;
+  if (!user_id) {
+    return res.status(401).json({
+      message: "Unauthorized",
+    });
+  }
+
+  const parsed = SyncTasksSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      message: "Parsing error",
+      errors: parsed.error.errors,
+    });
+  }
+
+  const { tasks } = parsed.data as SyncTasksInput;
+
+  const client = await pool.connect();
+  const syncedTasks: SyncedTask[] = [];
+
+  try {
+    await client.query("BEGIN");
+
+    for (const task of tasks) {
+      const existingTask = await getTaskById(user_id, task.task_id, client);
+
+      if (
+        existingTask &&
+        task.is_synced &&
+        new Date(task.updated_at).getTime() ===
+          new Date(existingTask.updated_at).getTime()
+      ) {
+        syncedTasks.push({
+          task_id: task.task_id,
+          action: ACTION.skipped,
+        });
+
+        continue;
+      }
+
+      if (task.is_marked_for_deletion) {
+        if (existingTask) {
+          await softDeleteTaskById(user_id, task.task_id, client);
+
+          syncedTasks.push({
+            task_id: task.task_id,
+            action: ACTION.deleted,
+          });
+        } else {
+          syncedTasks.push({
+            task_id: task.task_id,
+            action: ACTION.skipped,
+          });
+        }
+
+        continue;
+      }
+
+      if (existingTask) {
+        await updateTaskDao(
+          user_id,
+          task.task_id,
+          {
+            title: task.title,
+            task_description: task.task_description || null,
+            task_date_time: new Date(task.task_date_time),
+            notes: task.notes || null,
+            is_completed: task.is_completed,
+            updated_at: task.updated_at || new Date(),
+          },
+          client,
+        );
+
+        syncedTasks.push({
+          task_id: task.task_id,
+          action: ACTION.updated,
+        });
+      } else {
+        await createTaskDaoForSync(
+          {
+            user_id,
+            task_id: task.task_id,
+            title: task.title,
+            task_description: task.task_description,
+            task_date_time: new Date(task.task_date_time),
+            notes: task.notes,
+            is_completed: task.is_completed,
+            created_at: task.created_at,
+            updated_at: task.updated_at,
+          },
+          client,
+        );
+
+        syncedTasks.push({
+          task_id: task.task_id,
+          action: ACTION.created,
+        });
+      }
+    }
+
+    await markTasksAsSynced(
+      user_id,
+      tasks.map((t) => t.task_id),
+      client,
+    );
+    const hardDeletedTasks = await hardDeleteSoftDeletedTasks(user_id, client);
+
+    await client.query("COMMIT");
+
+    return res.status(200).json({
+      message: "Sync completed successfully",
+      syncCount: syncedTasks.length,
+      hardDeletedCount: hardDeletedTasks.length,
+      syncedTasks,
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error During Sync", error);
+    return res.status(500).json({
+      message: "Internal Server Error",
+    });
+  } finally {
+    client.release();
+  }
+};
+
 export {
   createTask,
   getTasks,
@@ -263,4 +396,5 @@ export {
   updateTask,
   deleteTaskById,
   deleteTasksByDate,
+  syncTasks,
 };

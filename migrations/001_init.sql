@@ -20,5 +20,6 @@ CREATE TABLE IF NOT EXISTS tasks (
   is_synced BOOLEAN DEFAULT FALSE,
   is_marked_for_deletion BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW (),
-  updated_at TIMESTAMPTZ DEFAULT NOW ()
+  updated_at TIMESTAMPTZ DEFAULT NOW (),
+  synced_at TIMESTAMPTZ DEFAULT NULL
 );

@@ -6,6 +6,7 @@ import {
   deleteTasksByDate,
   getTask,
   getTasks,
+  syncTasks,
   updateTask,
 } from "../services/tasks";
 
@@ -17,5 +18,6 @@ router.get("/getTask/:task_id", authenticate, getTask);
 router.patch("/updateTask/:task_id", authenticate, updateTask);
 router.patch("/deleteTaskById/:task_id", authenticate, deleteTaskById);
 router.patch("/deleteTasksByDate/:task_date", authenticate, deleteTasksByDate);
+router.post("/sync", authenticate, syncTasks);
 
 export default router;
