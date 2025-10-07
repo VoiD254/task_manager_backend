@@ -4,12 +4,21 @@ import {
   SigninSchema,
   SignupInput,
   SignupSchema,
+  UpdateProfileInput,
+  UpdateProfileSchema,
 } from "./validation";
-import { createUser, findUserByEmail, getProfileDao } from "./dao";
+import {
+  createUser,
+  findUserByEmail,
+  getProfileDao,
+  PROFILE_NAMESPACE,
+  updateProfileDao,
+} from "./dao";
 import bcrypt from "bcrypt";
 import configuration from "../../../configuration";
 import jwt from "jsonwebtoken";
 import { AuthResponse } from "./interface";
+import { CACHE } from "../../dependency/cache";
 
 if (!configuration.JWT_SECRET) {
   throw new Error("JWT_SECRET is not defined in configuration");
@@ -144,4 +153,42 @@ const getProfile = async (req: Request, res: Response) => {
   }
 };
 
-export { signup, signin, getProfile };
+const updateProfile = async (req: Request, res: Response) => {
+  const user_id = req.user?.user_id;
+
+  const parsed = UpdateProfileSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      message: "Parsing Error",
+      errors: parsed.error.errors,
+    });
+  }
+
+  const { name } = parsed.data as UpdateProfileInput;
+
+  try {
+    const updatedUser = await updateProfileDao({ user_id, name });
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    try {
+      await CACHE.del(`${PROFILE_NAMESPACE}:${user_id}`);
+    } catch (err) {
+      throw new Error("Failed to invalidate profile cache");
+    }
+
+    return res.status(200).json({
+      profile: updatedUser,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+};
+
+export { signup, signin, getProfile, updateProfile };

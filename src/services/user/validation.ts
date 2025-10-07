@@ -57,4 +57,20 @@ const SigninSchema = z.object({
 
 interface SigninInput extends z.infer<typeof SigninSchema> {}
 
-export { SignupSchema, SigninSchema, SigninInput, SignupInput };
+const UpdateProfileSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Name cannot be empty")
+    .max(50, "Name cannot be longer than 50 characters"),
+});
+
+type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>;
+
+export {
+  SignupSchema,
+  SigninSchema,
+  SigninInput,
+  SignupInput,
+  UpdateProfileSchema,
+  UpdateProfileInput,
+};

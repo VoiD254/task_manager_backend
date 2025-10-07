@@ -16,4 +16,9 @@ interface UserProfile {
   email: string;
 }
 
-export { AuthResponse, CreateUserInput, UserProfile };
+interface UpdateProfileInput {
+  user_id: string;
+  name: string;
+}
+
+export { AuthResponse, CreateUserInput, UserProfile, UpdateProfileInput };

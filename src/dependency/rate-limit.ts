@@ -22,19 +22,24 @@ class RateLimitError extends Error {
 }
 
 class RateLimiter {
-  private redis = getDependencies().redisClient;
+  private get redis() {
+    return getDependencies().redisClient;
+  }
 
   private async incrementCounter(
     key: string,
     ttlSeconds: number,
   ): Promise<number> {
-    if (!this.redis) {
+    const redis = this.redis;
+
+    if (!redis) {
+      console.warn("Redis not initialized; skipping rate limit.");
       return 0;
     }
 
-    const value = await this.redis.incr(key);
+    const value = await redis.incr(key);
     if (value === 1) {
-      await this.redis.expire(key, ttlSeconds + TTL_BUFFER_SECONDS);
+      await redis.expire(key, ttlSeconds + TTL_BUFFER_SECONDS);
     }
 
     return value;
@@ -43,7 +48,7 @@ class RateLimiter {
   private getKey(prefix: string, id: string, windowSeconds: number): string {
     const window = Math.floor(Date.now() / (windowSeconds * 1000));
 
-    return `${RATE_NAMESPACE}:${prefix}:${id}${window}`;
+    return `${RATE_NAMESPACE}:${prefix}:${id}:${window}`;
   }
 
   private getTaskKey(userId: string, taskDate: Date): string {
