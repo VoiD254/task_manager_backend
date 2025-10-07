@@ -11,4 +11,9 @@ interface CreateUserInput {
   password: string;
 }
 
-export { AuthResponse, CreateUserInput };
+interface UserProfile {
+  name: string;
+  email: string;
+}
+
+export { AuthResponse, CreateUserInput, UserProfile };

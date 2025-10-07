@@ -5,7 +5,7 @@ import {
   SignupInput,
   SignupSchema,
 } from "./validation";
-import { createUser, findUserByEmail } from "./dao";
+import { createUser, findUserByEmail, getProfileDao } from "./dao";
 import bcrypt from "bcrypt";
 import configuration from "../../../configuration";
 import jwt from "jsonwebtoken";
@@ -124,4 +124,24 @@ const signin = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export { signup, signin };
+const getProfile = async (req: Request, res: Response) => {
+  const user_id = req.user?.user_id;
+
+  try {
+    const profile = await getProfileDao(user_id);
+
+    if (!profile) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({ profile });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+};
+
+export { signup, signin, getProfile };
