@@ -9,6 +9,7 @@ import {
   markTasksAsSynced,
   softDeleteTaskById,
   softDeleteTasksByDate,
+  TASKS_NAMESPACE,
   updateTaskDao,
 } from "./dao";
 import {
@@ -26,6 +27,17 @@ import {
   SyncTasksInput,
 } from "./validation";
 import pool from "../../dependency/pg";
+import { CACHE } from "../../dependency/cache";
+
+async function invalidateCache(user_id: string, date: string) {
+  const cacheKey = `${TASKS_NAMESPACE}:${user_id}:${date}`;
+
+  try {
+    await CACHE.del(cacheKey);
+  } catch (err) {
+    console.error("Failed to invalidate task cache", err);
+  }
+}
 
 // "hh:mm AM/PM" to "HH:MM:SS" 24-hour format
 const convertTo24Hour = (time: string): string => {
@@ -67,6 +79,7 @@ const createTask = async (req: Request, res: Response) => {
     };
 
     const createdTask = await createTaskDao(task);
+    await invalidateCache(user_id, task_date);
 
     return res.status(201).json(createdTask);
   } catch (error) {
@@ -183,6 +196,10 @@ const updateTask = async (req: Request, res: Response) => {
       });
     }
 
+    const oldDate = new Date(existingTask.task_date_time)
+      .toISOString()
+      .split("T")[0];
+
     const updates: Partial<UpdateTask> = {
       ...rest,
       ...(task_date || task_time
@@ -197,6 +214,12 @@ const updateTask = async (req: Request, res: Response) => {
     };
 
     const updatedTask = await updateTaskDao(user_id, task_id, updates);
+
+    await invalidateCache(user_id, oldDate);
+
+    if (task_date) {
+      await invalidateCache(user_id, task_date);
+    }
 
     return res.status(200).json(updatedTask);
   } catch (error) {
@@ -220,12 +243,25 @@ const deleteTaskById = async (req: Request, res: Response) => {
 
     const { task_id } = parsedData.data as TaskByIdInput;
 
+    const existingTask = await getTaskById(user_id, task_id);
+    if (!existingTask) {
+      return res.status(404).json({
+        message: "Task Not Found or already deleted",
+      });
+    }
+
     const deleted = await softDeleteTaskById(user_id, task_id);
     if (!deleted) {
       return res.status(404).json({
         message: "Task Not Found or already deleted",
       });
     }
+
+    const taskDate = new Date(existingTask.task_date_time)
+      .toISOString()
+      .split("T")[0];
+
+    await invalidateCache(user_id, taskDate);
 
     return res.status(200).json(deleted);
   } catch (error) {
@@ -250,6 +286,8 @@ const deleteTasksByDate = async (req: Request, res: Response) => {
     const { task_date } = parsed.data as DeleteTasksByDateInput;
 
     const deletedTasks = await softDeleteTasksByDate(user_id, task_date);
+
+    await invalidateCache(user_id, task_date);
 
     return res.status(200).json({
       message: `${deletedTasks.length} task(s) deleted successfully`,
@@ -282,12 +320,18 @@ const syncTasks = async (req: Request, res: Response) => {
 
   const client = await pool.connect();
   const syncedTasks: SyncedTask[] = [];
+  const affectedDates = new Set<string>();
 
   try {
     await client.query("BEGIN");
 
     for (const task of tasks) {
       const existingTask = await getTaskById(user_id, task.task_id, client);
+
+      const taskDate = new Date(task.task_date_time)
+        .toISOString()
+        .split("T")[0];
+      affectedDates.add(taskDate);
 
       if (
         existingTask &&
@@ -371,6 +415,10 @@ const syncTasks = async (req: Request, res: Response) => {
     const hardDeletedTasks = await hardDeleteSoftDeletedTasks(user_id, client);
 
     await client.query("COMMIT");
+
+    for (const date of affectedDates) {
+      await invalidateCache(user_id, date);
+    }
 
     return res.status(200).json({
       message: "Sync completed successfully",

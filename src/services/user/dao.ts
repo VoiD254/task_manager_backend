@@ -33,7 +33,7 @@ async function getProfileDao(user_id: string): Promise<UserProfile | null> {
       return cached;
     }
   } catch (err) {
-    throw new Error("Error reading from cache");
+    console.error("Error reading from cache", err);
   }
 
   const query = `
@@ -52,7 +52,7 @@ async function getProfileDao(user_id: string): Promise<UserProfile | null> {
   try {
     await CACHE.set(cacheKey, profile, PROFILE_TTL);
   } catch (err) {
-    throw new Error("Error setting cache");
+    console.error("Error setting cache", err);
   }
 
   return profile;

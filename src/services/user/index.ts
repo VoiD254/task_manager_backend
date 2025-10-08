@@ -178,7 +178,7 @@ const updateProfile = async (req: Request, res: Response) => {
     try {
       await CACHE.del(`${PROFILE_NAMESPACE}:${user_id}`);
     } catch (err) {
-      throw new Error("Failed to invalidate profile cache");
+      console.error("Failed to invalidate profile cache", err);
     }
 
     return res.status(200).json({

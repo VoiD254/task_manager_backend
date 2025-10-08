@@ -1,6 +1,10 @@
 import { PoolClient } from "pg";
 import pool from "../../dependency/pg";
 import { CreateTask, CreateTaskForSync, UpdateTask } from "./interface";
+import { CACHE } from "../../dependency/cache";
+
+const TASKS_NAMESPACE = "taskmanager:tasks";
+const TASKS_TTL = 120; // 2 mins
 
 const createTaskDao = async (task: CreateTask) => {
   const query = `
@@ -50,23 +54,52 @@ const createTaskDaoForSync = async (
 };
 
 const getTasksByUserId = async (user_id: string, date?: string) => {
-  let query = `
+  if (date) {
+    const cacheKey = `${TASKS_NAMESPACE}:${user_id}:${date}`;
+
+    try {
+      const cached = await CACHE.get(cacheKey);
+      if (cached !== null) {
+        return cached;
+      }
+    } catch (err) {
+      console.error("Error reading from cache", err);
+    }
+
+    const query = `
+      SELECT *
+      FROM tasks
+      WHERE user_id = $1
+        AND DATE(task_date_time) = $2
+        AND is_marked_for_deletion = false
+      ORDER BY task_date_time ASC
+    `;
+
+    const values = [user_id, date];
+
+    const result = await pool.query(query, values);
+    const tasks = result.rows;
+
+    if (tasks.length > 0) {
+      try {
+        await CACHE.set(cacheKey, tasks, TASKS_TTL);
+      } catch (err) {
+        console.error("Error setting cache", err);
+      }
+    }
+
+    return tasks;
+  }
+
+  const query = `
     SELECT *
     FROM tasks
     WHERE user_id = $1
-    AND is_marked_for_deletion = false
+      AND is_marked_for_deletion = false
+    ORDER BY task_date_time ASC
   `;
 
-  const values = [user_id];
-
-  if (date) {
-    query += " AND DATE(task_date_time) = $2";
-    values.push(date);
-  }
-
-  query += " ORDER BY task_date_time ASC";
-
-  const result = await pool.query(query, values);
+  const result = await pool.query(query, [user_id]);
 
   return result.rows;
 };
@@ -215,4 +248,5 @@ export {
   softDeleteTasksByDate,
   hardDeleteSoftDeletedTasks,
   markTasksAsSynced,
+  TASKS_NAMESPACE,
 };

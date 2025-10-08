@@ -6,7 +6,7 @@ function taskRateLimit(limit: number = DEFAULT_TASKS_PER_DATE_LIMIT) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.user?.user_id;
-      const taskDate = req.body?.task_date_time;
+      const taskDate = req.body?.task_date;
 
       if (!userId || !taskDate) {
         return res.status(400).json({
