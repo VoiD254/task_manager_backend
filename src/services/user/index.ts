@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import {
+  RefreshTokenInput,
+  RefreshTokenSchema,
   SigninInput,
   SigninSchema,
   SignupInput,
@@ -17,14 +19,38 @@ import {
 import bcrypt from "bcrypt";
 import configuration from "../../../configuration";
 import jwt from "jsonwebtoken";
-import { AuthResponse } from "./interface";
+import { AuthResponse, AuthTokens } from "./interface";
 import { CACHE } from "../../dependency/cache";
+import {
+  deleteStoredRefreshToken,
+  getUserIdByRefreshToken,
+  storeRefreshToken,
+} from "../../dependency/refreshSession";
+import { v4 as uuidv4 } from "uuid";
 
 if (!configuration.JWT_SECRET) {
   throw new Error("JWT_SECRET is not defined in configuration");
 }
 
 const JWT_SECRET = configuration.JWT_SECRET;
+
+async function generateTokens(user_id: string) {
+  const accessToken = jwt.sign(
+    {
+      sub: user_id,
+    },
+    JWT_SECRET,
+    { expiresIn: "1h" },
+  );
+
+  const refreshToken = uuidv4();
+  await storeRefreshToken(user_id, refreshToken);
+
+  return {
+    accessToken,
+    refreshToken,
+  };
+}
 
 const signup = async (req: Request, res: Response): Promise<void> => {
   const parse = SignupSchema.safeParse(req.body);
@@ -55,19 +81,14 @@ const signup = async (req: Request, res: Response): Promise<void> => {
       password: hashedPassword,
     });
 
-    const token = jwt.sign(
-      {
-        sub: newUser.user_id,
-      },
-      JWT_SECRET,
-      { expiresIn: "7d" },
-    );
+    const { accessToken, refreshToken } = await generateTokens(newUser.user_id);
 
     const response: AuthResponse = {
       user_id: newUser.user_id,
       name: newUser.name,
       email: newUser.email,
-      token,
+      accessToken,
+      refreshToken,
     };
 
     res.status(201).json(response);
@@ -110,19 +131,14 @@ const signin = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const token = jwt.sign(
-      {
-        sub: user.user_id,
-      },
-      JWT_SECRET,
-      { expiresIn: "7d" },
-    );
+    const { accessToken, refreshToken } = await generateTokens(user.user_id);
 
     const response: AuthResponse = {
       user_id: user.user_id,
       name: user.name,
       email: user.email,
-      token,
+      accessToken,
+      refreshToken,
     };
 
     res.status(200).json(response);
@@ -130,6 +146,51 @@ const signin = async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({
       message: "Internal server Error",
     });
+  }
+};
+
+const refresh = async (req: Request, res: Response) => {
+  const parsed = RefreshTokenSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      message: "Parsing error",
+      errors: parsed.error.errors,
+    });
+  }
+
+  const { refreshToken } = parsed.data as RefreshTokenInput;
+
+  try {
+    const user_id = await getUserIdByRefreshToken(refreshToken);
+    if (!user_id) {
+      return res.status(401).json({
+        message: "Invalid or expired refresh token",
+      });
+    }
+
+    await deleteStoredRefreshToken(refreshToken);
+
+    const accessToken = jwt.sign(
+      {
+        sub: user_id,
+      },
+      JWT_SECRET,
+      {
+        expiresIn: "1h",
+      },
+    );
+
+    const newRefreshToken = uuidv4();
+    await storeRefreshToken(user_id, newRefreshToken);
+
+    const response: AuthTokens = {
+      accessToken,
+      refreshToken: newRefreshToken,
+    };
+
+    res.status(200).json(response);
+  } catch (err) {
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -191,4 +252,4 @@ const updateProfile = async (req: Request, res: Response) => {
   }
 };
 
-export { signup, signin, getProfile, updateProfile };
+export { signup, signin, getProfile, updateProfile, refresh };

@@ -12,6 +12,23 @@ function connectRedis() {
     return redis;
   }
 
+  if (process.env.NODE_ENV !== "production") {
+    if (!(global as any)._redis) {
+      (global as any)._redis = new Redis(configuration.REDIS_URI);
+
+      (global as any)._redis.on("connect", () =>
+        console.log("Connected to Redis (dev hot reload)"),
+      );
+
+      (global as any)._redis.on("error", (err: any) =>
+        console.error("Redis connection error (dev):", err),
+      );
+    }
+
+    redis = (global as any)._redis;
+    return redis;
+  }
+
   redis = new Redis(configuration.REDIS_URI);
 
   redis.on("connect", () => {

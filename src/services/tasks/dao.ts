@@ -140,21 +140,11 @@ const updateTaskDao = async (
 
   const values = fields.map((field) => updates[field as keyof UpdateTask]);
 
-  const hasUpdatedAt = "updated_at" in updates;
-
-  let updatedAtClause: string;
-  if (hasUpdatedAt) {
-    updatedAtClause = `updated_at = $${values.length + 1}`;
-    values.push(updates.updated_at);
-  } else {
-    updatedAtClause = `updated_at = NOW()`;
-  }
-
   values.push(user_id, task_id);
 
   const query = `
     UPDATE tasks
-    SET ${setStrings}, ${updatedAtClause}, is_synced = false
+    SET ${setStrings}, is_synced = false
     WHERE user_id = $${values.length - 1} AND task_id = $${values.length}
     RETURNING *
   `;

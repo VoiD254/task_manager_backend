@@ -14,6 +14,7 @@ export function initDependencies() {
   data.pgPool = pool;
   console.log("PostgreSQL connection pool initialized");
   data.redisClient = connectRedis() as Redis;
+  console.log("Redis initialized");
 }
 
 export function getDependencies() {

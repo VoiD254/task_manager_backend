@@ -1,40 +1,39 @@
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import tasksRoutes from "./src/route/tasks";
 import userRoutes from "./src/route/user";
 import configuration from "./configuration";
 import { initializeAppEnvironment } from "./src/dependency";
 import cors from "cors";
 import morgan from "morgan";
+import helmet from "helmet";
 
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(morgan("dev"));
+app.use(morgan("combined"));
 app.use(cors());
+app.use(helmet());
 
-app.use("/api/v1/user", userRoutes);
-app.use("/api/v1/tasks", tasksRoutes);
+const asyncHandler =
+  (fn: any) => (req: Request, res: Response, next: NextFunction) =>
+    Promise.resolve(fn(req, res, next)).catch(next);
+
+app.use("/api/v1/user", asyncHandler(userRoutes));
+app.use("/api/v1/tasks", asyncHandler(tasksRoutes));
 console.log("User routes loaded!");
 
 app.get("/", (req, res) => {
   res.send("Welcome to the Task manager app server!");
 });
 
-app.use(
-  (
-    err: any,
-    req: express.Request,
-    res: express.Response,
-    next: express.NextFunction,
-  ) => {
-    console.error(err.stack);
-    res.status(500).json({ message: "Something went wrong!" });
-  },
-);
-
-app.use("/*path", (req, res) => {
+app.use((_req: Request, res: Response) => {
   res.status(404).json({ message: "Route not found" });
+});
+
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  console.error(err.stack);
+  res.status(500).json({ message: "Something went wrong!" });
 });
 
 initializeAppEnvironment()

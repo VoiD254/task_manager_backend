@@ -9,8 +9,8 @@ import {
   syncTasks,
   updateTask,
 } from "../services/tasks";
-import { rateLimitApi } from "../dependency/middleware/apiRateLimit";
-import { taskRateLimit } from "../dependency/middleware/taskRateLimit";
+import { rateLimitApi } from "../dependency/middleware/rate-limit-middleware/apiRateLimit";
+import { taskRateLimit } from "../dependency/middleware/rate-limit-middleware/taskRateLimit";
 
 const router = Router();
 

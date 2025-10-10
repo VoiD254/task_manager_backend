@@ -46,7 +46,6 @@ const UpdateTaskSchema = z.object({
   notes: z.string().max(200).optional(),
   is_completed: z.boolean().optional(),
   is_marked_for_deletion: z.boolean().optional(),
-  is_synced: z.boolean().optional(),
 });
 
 type UpdateTaskInput = z.infer<typeof UpdateTaskSchema>;

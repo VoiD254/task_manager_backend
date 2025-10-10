@@ -1,8 +1,14 @@
-interface AuthResponse {
+import { ZodUUID } from "zod/v4";
+
+interface AuthResponse extends AuthTokens {
   user_id: string;
   name: string;
   email: string;
-  token: string;
+}
+
+interface AuthTokens {
+  accessToken: string;
+  refreshToken: string | ZodUUID;
 }
 
 interface CreateUserInput {
@@ -21,4 +27,10 @@ interface UpdateProfileInput {
   name: string;
 }
 
-export { AuthResponse, CreateUserInput, UserProfile, UpdateProfileInput };
+export {
+  AuthResponse,
+  CreateUserInput,
+  UserProfile,
+  UpdateProfileInput,
+  AuthTokens,
+};

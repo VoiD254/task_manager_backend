@@ -1,12 +1,13 @@
 import { Router } from "express";
 import {
   getProfile,
+  refresh,
   signin,
   signup,
   updateProfile,
 } from "../services/user/index";
 import { authenticate } from "../dependency/middleware/auth/auth";
-import { rateLimitApi } from "../dependency/middleware/apiRateLimit";
+import { rateLimitApi } from "../dependency/middleware/rate-limit-middleware/apiRateLimit";
 
 const router = Router();
 
@@ -24,5 +25,6 @@ router.patch(
   rateLimitApi({ maxRequests: 30 }),
   updateProfile,
 );
+router.post("/refreshToken", rateLimitApi({ maxRequests: 10 }), refresh);
 
 export default router;

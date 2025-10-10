@@ -66,6 +66,12 @@ const UpdateProfileSchema = z.object({
 
 type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>;
 
+const RefreshTokenSchema = z.object({
+  refreshToken: z.string().uuid("Invalid UUID format for refresh token."),
+});
+
+type RefreshTokenInput = z.infer<typeof RefreshTokenSchema>;
+
 export {
   SignupSchema,
   SigninSchema,
@@ -73,4 +79,6 @@ export {
   SignupInput,
   UpdateProfileSchema,
   UpdateProfileInput,
+  RefreshTokenSchema,
+  RefreshTokenInput,
 };

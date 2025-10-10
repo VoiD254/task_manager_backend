@@ -8,11 +8,15 @@ services:
       - "3000:3000"
     env_file:
       - ./configs/.local.env
+    environment:
+      - REDIS_URI=${REDIS_URI_DOCKER} 
     depends_on:
       - db
+      - redis
     volumes:
       - ./:/app
       - /app/node_modules
+    restart: unless-stopped
 
   db:
     image: postgres:17
@@ -25,5 +29,18 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  redis:
+    image: redis:7.4
+    container_name: redis_container
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    environment:
+      - REDIS_URI=redis://redis_container:6379
+
 volumes:
   postgres_data:
+  redis_data:

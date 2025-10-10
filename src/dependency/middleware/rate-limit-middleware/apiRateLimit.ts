@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { DEFAULT_API_LIMIT, RateLimiter, RateLimitError } from "../rate-limit";
+import { DEFAULT_API_LIMIT, RateLimiter, RateLimitError } from "../../rate-limit";
 
 const rateLimiter = new RateLimiter();
 

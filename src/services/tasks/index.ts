@@ -29,14 +29,12 @@ import {
 import pool from "../../dependency/pg";
 import { CACHE } from "../../dependency/cache";
 
-async function invalidateCache(user_id: string, date: string) {
+function invalidateCache(user_id: string, date: string) {
   const cacheKey = `${TASKS_NAMESPACE}:${user_id}:${date}`;
 
-  try {
-    await CACHE.del(cacheKey);
-  } catch (err) {
-    console.error("Failed to invalidate task cache", err);
-  }
+  CACHE.del(cacheKey).catch((err) => {
+    console.error(`Failed to invalidate cache for ${cacheKey}:`, err);
+  });
 }
 
 // "hh:mm AM/PM" to "HH:MM:SS" 24-hour format
@@ -79,7 +77,7 @@ const createTask = async (req: Request, res: Response) => {
     };
 
     const createdTask = await createTaskDao(task);
-    await invalidateCache(user_id, task_date);
+    invalidateCache(user_id, task_date);
 
     return res.status(201).json(createdTask);
   } catch (error) {
@@ -215,7 +213,7 @@ const updateTask = async (req: Request, res: Response) => {
 
     const updatedTask = await updateTaskDao(user_id, task_id, updates);
 
-    await invalidateCache(user_id, oldDate);
+    invalidateCache(user_id, oldDate);
 
     if (task_date) {
       await invalidateCache(user_id, task_date);
@@ -261,7 +259,7 @@ const deleteTaskById = async (req: Request, res: Response) => {
       .toISOString()
       .split("T")[0];
 
-    await invalidateCache(user_id, taskDate);
+    invalidateCache(user_id, taskDate);
 
     return res.status(200).json(deleted);
   } catch (error) {
@@ -287,7 +285,7 @@ const deleteTasksByDate = async (req: Request, res: Response) => {
 
     const deletedTasks = await softDeleteTasksByDate(user_id, task_date);
 
-    await invalidateCache(user_id, task_date);
+    invalidateCache(user_id, task_date);
 
     return res.status(200).json({
       message: `${deletedTasks.length} task(s) deleted successfully`,
@@ -417,7 +415,7 @@ const syncTasks = async (req: Request, res: Response) => {
     await client.query("COMMIT");
 
     for (const date of affectedDates) {
-      await invalidateCache(user_id, date);
+      invalidateCache(user_id, date);
     }
 
     return res.status(200).json({
