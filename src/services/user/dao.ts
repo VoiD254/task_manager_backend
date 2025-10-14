@@ -1,6 +1,11 @@
 import { CACHE } from "../../dependency/cache";
 import pool from "../../dependency/pg";
-import { CreateUserInput, UpdateProfileInput, UserProfile } from "./interface";
+import {
+  CreateUserInput,
+  UpdateProfileInput,
+  UpdateUserPassword,
+  UserProfile,
+} from "./interface";
 
 const PROFILE_TTL = 300; // 5 mins
 const PROFILE_NAMESPACE = "taskmanager:user:profile";
@@ -14,7 +19,7 @@ async function createUser(data: CreateUserInput) {
   return result.rows[0];
 }
 
-async function findUserByEmail(email: string) {
+async function findUserByEmail({ email }: Omit<UserProfile, "name">) {
   const result = await pool.query(
     "SELECT * FROM users WHERE email = $1 LIMIT 1",
     [email],
@@ -73,10 +78,27 @@ async function updateProfileDao({ user_id, name }: UpdateProfileInput) {
   return result.rows[0] || null;
 }
 
+async function updateUserPassword({
+  user_id,
+  hashedPassword,
+}: UpdateUserPassword) {
+  const query = `
+    UPDATE users
+    SET password = $1, updated_at = NOW()
+    WHERE user_id = $2
+    RETURNING user_id, name, email
+  `;
+
+  const result = await pool.query(query, [hashedPassword, user_id]);
+
+  return result.rows[0] || null;
+}
+
 export {
   createUser,
   findUserByEmail,
   getProfileDao,
   updateProfileDao,
+  updateUserPassword,
   PROFILE_NAMESPACE,
 };

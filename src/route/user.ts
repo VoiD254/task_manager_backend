@@ -1,10 +1,14 @@
 import { Router } from "express";
 import {
+  forgotPassword,
   getProfile,
   refresh,
+  resendOtp,
+  resetPassword,
   signin,
   signup,
   updateProfile,
+  verifyOtp,
 } from "../services/user/index";
 import { authenticate } from "../dependency/middleware/auth/auth";
 import { rateLimitApi } from "../dependency/middleware/rate-limit-middleware/apiRateLimit";
@@ -26,5 +30,25 @@ router.patch(
   updateProfile,
 );
 router.post("/refreshToken", rateLimitApi({ maxRequests: 10 }), refresh);
+router.post(
+  "/forgotPassword",
+  rateLimitApi({ maxRequests: 5, windowSeconds: 300 }),
+  forgotPassword,
+);
+router.post(
+  "/resendOtp",
+  rateLimitApi({ maxRequests: 5, windowSeconds: 300 }),
+  resendOtp,
+);
+router.post(
+  "/verifyOtp",
+  rateLimitApi({ maxRequests: 10, windowSeconds: 300 }),
+  verifyOtp,
+);
+router.patch(
+  "/resetPassword",
+  rateLimitApi({ maxRequests: 10, windowSeconds: 300 }),
+  resetPassword,
+);
 
 export default router;

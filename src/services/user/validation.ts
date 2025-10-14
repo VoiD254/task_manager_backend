@@ -72,13 +72,56 @@ const RefreshTokenSchema = z.object({
 
 type RefreshTokenInput = z.infer<typeof RefreshTokenSchema>;
 
+const ForgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email"),
+});
+
+type ForgotPasswordInput = z.infer<typeof ForgotPasswordSchema>;
+
+const VerifyOtpSchema = z.object({
+  email: z.string().email("Invalid email"),
+  otp: z.string().length(6, "OTP must be 6 digits"),
+});
+
+type VerifyOtpInput = z.infer<typeof VerifyOtpSchema>;
+
+const ResetPasswordSchema = z
+  .object({
+    resetToken: z.string().uuid("Invalid reset token"),
+    newPassword: z
+      .string()
+      .min(6, "Password must be at least 6 characters")
+      .refine((val) => /[A-Z]/.test(val), {
+        message: "Password must include at least one uppercase letter",
+      })
+      .refine((val) => /[0-9]/.test(val), {
+        message: "Password must include at least one number",
+      })
+      .refine((val) => /[!@#$%^&*(),.?":{}|<>]/.test(val), {
+        message: "Password must include at least one special character",
+      }),
+    confirmPassword: z.string().min(6),
+  })
+  .refine((d) => d.newPassword === d.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Passwords do not match",
+  });
+
+type ResetPasswordInput = z.infer<typeof ResetPasswordSchema>;
+
 export {
   SignupSchema,
+  SignupInput,
   SigninSchema,
   SigninInput,
-  SignupInput,
   UpdateProfileSchema,
   UpdateProfileInput,
   RefreshTokenSchema,
   RefreshTokenInput,
+  ForgotPasswordSchema,
+  ForgotPasswordInput,
+  VerifyOtpSchema,
+  VerifyOtpInput,
+  ResetPasswordSchema,
+  ResetPasswordInput,
 };

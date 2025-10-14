@@ -1,5 +1,5 @@
 import { ZodUUID } from "zod/v4";
-import { getDependencies } from ".";
+import { getDependencies } from "..";
 
 const redis = getDependencies().redisClient;
 const REFRESH_NAMESPACE = "taskmanager:user:refresh";

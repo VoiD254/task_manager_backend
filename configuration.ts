@@ -12,4 +12,11 @@ export default {
   DATABASE_URL: process.env.DATABASE_URL,
   JWT_SECRET: process.env.JWT_SECRET,
   REDIS_URI: process.env.REDIS_URI,
+  SMTP: {
+    HOST: process.env.SMTP_HOST,
+    PORT: process.env.SMTP_PORT,
+    USER: process.env.SMTP_USER,
+    PASS: process.env.SMTP_PASS,
+    FROM: process.env.SMTP_FROM,
+  },
 };

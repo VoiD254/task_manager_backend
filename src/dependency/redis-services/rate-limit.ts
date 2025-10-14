@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { getDependencies } from ".";
+import { getDependencies } from "..";
 import { Request } from "express";
 
 const DEFAULT_API_LIMIT = 60;

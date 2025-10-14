@@ -22,6 +22,11 @@ interface UserProfile {
   email: string;
 }
 
+interface UpdateUserPassword {
+  user_id: string;
+  hashedPassword: string;
+}
+
 interface UpdateProfileInput {
   user_id: string;
   name: string;
@@ -33,4 +38,5 @@ export {
   UserProfile,
   UpdateProfileInput,
   AuthTokens,
+  UpdateUserPassword,
 };

@@ -22,6 +22,6 @@ export function getDependencies() {
 }
 
 export async function initializeAppEnvironment() {
-  await initDependencies();
-  // Add any other global setup here in the future
+  initDependencies();
+  // Add any other global setup here
 }
