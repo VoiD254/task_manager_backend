@@ -1,4 +1,9 @@
-import express, { NextFunction, Request, Response } from "express";
+import express, {
+  NextFunction,
+  Request,
+  RequestHandler,
+  Response,
+} from "express";
 import tasksRoutes from "./src/route/tasks";
 import userRoutes from "./src/route/user";
 import configuration from "./configuration";
@@ -16,7 +21,7 @@ app.use(cors());
 app.use(helmet());
 
 const asyncHandler =
-  (fn: any) => (req: Request, res: Response, next: NextFunction) =>
+  (fn: RequestHandler) => (req: Request, res: Response, next: NextFunction) =>
     Promise.resolve(fn(req, res, next)).catch(next);
 
 app.use("/api/v1/user", asyncHandler(userRoutes));

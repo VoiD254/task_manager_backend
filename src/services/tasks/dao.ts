@@ -144,6 +144,37 @@ const updateTaskDao = async (
 
   const query = `
     UPDATE tasks
+    SET ${setStrings}, is_synced = false, updated_at = NOW()
+    WHERE user_id = $${values.length - 1} AND task_id = $${values.length}
+    RETURNING *
+  `;
+
+  const result = await client.query(query, values);
+
+  return result.rows[0];
+};
+
+const updateTaskDaoForSync = async (
+  user_id: string,
+  task_id: string,
+  updates: Partial<UpdateTask>,
+  client: PoolClient | typeof pool = pool,
+) => {
+  const fields = Object.keys(updates);
+  if (fields.length === 0) {
+    return null;
+  }
+
+  const setStrings = fields
+    .map((field, i) => `${field} = $${i + 1}`)
+    .join(", ");
+
+  const values = fields.map((field) => updates[field as keyof UpdateTask]);
+
+  values.push(user_id, task_id);
+
+  const query = `
+    UPDATE tasks
     SET ${setStrings}, is_synced = false
     WHERE user_id = $${values.length - 1} AND task_id = $${values.length}
     RETURNING *
@@ -234,6 +265,7 @@ export {
   getTasksByUserId,
   getTaskById,
   updateTaskDao,
+  updateTaskDaoForSync,
   softDeleteTaskById,
   softDeleteTasksByDate,
   hardDeleteSoftDeletedTasks,

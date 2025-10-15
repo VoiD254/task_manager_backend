@@ -1,6 +1,11 @@
 import { Request, Response, NextFunction } from "express";
-import { DEFAULT_TASKS_PER_DATE_LIMIT, RateLimitError } from "../../rate-limit";
-import { rateLimiter } from "./apiRateLimit.js";
+import {
+  DEFAULT_TASKS_PER_DATE_LIMIT,
+  RateLimiter,
+  RateLimitError,
+} from "../../redis-services/rate-limit";
+
+const rateLimiter = new RateLimiter();
 
 function taskRateLimit(limit: number = DEFAULT_TASKS_PER_DATE_LIMIT) {
   return async (req: Request, res: Response, next: NextFunction) => {

@@ -33,17 +33,23 @@ const TaskByIdSchema = z.object({
 type TaskByIdInput = z.infer<typeof TaskByIdSchema>;
 
 const UpdateTaskSchema = z.object({
-  title: z.string().max(60).optional(),
-  task_description: z.string().max(200).optional(),
+  title: z.string().max(60, "Title cannot exceed 60 characters").optional(),
+  task_description: z
+    .string()
+    .max(200, "Description cannot exceed 200 characters")
+    .optional(),
   task_date: z
     .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format, use (yyyy-mm-dd)")
     .optional(),
   task_time: z
     .string()
-    .regex(/^\d{1,2}:\d{2} (AM|PM)$/)
+    .regex(/^\d{1,2}:\d{2} (AM|PM)$/, "Invalid time format, use (hh:mm AM/PM)")
     .optional(),
-  notes: z.string().max(200).optional(),
+  notes: z
+    .string()
+    .max(200, "Description cannot exceed 200 characters")
+    .optional(),
   is_completed: z.boolean().optional(),
   is_marked_for_deletion: z.boolean().optional(),
 });

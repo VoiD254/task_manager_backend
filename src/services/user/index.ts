@@ -29,6 +29,7 @@ import jwt from "jsonwebtoken";
 import { AuthResponse, AuthTokens } from "./interface";
 import { CACHE } from "../../dependency/cache";
 import {
+  deleteAllUserRefreshTokens,
   deleteStoredRefreshToken,
   getUserIdByRefreshToken,
   storeRefreshToken,
@@ -71,14 +72,13 @@ async function generateTokens(user_id: string) {
   };
 }
 
-const signup = async (req: Request, res: Response): Promise<void> => {
+const signup = async (req: Request, res: Response) => {
   const parse = SignupSchema.safeParse(req.body);
   if (!parse.success) {
-    res.status(400).json({
+    return res.status(400).json({
       message: "Parsing error",
       error: parse.error,
     });
-    return;
   }
 
   const { name, email, password } = parse.data as SignupInput;
@@ -86,11 +86,9 @@ const signup = async (req: Request, res: Response): Promise<void> => {
   try {
     const existing = await findUserByEmail({ email });
     if (existing) {
-      res.status(409).json({
+      return res.status(409).json({
         message: "email already exists",
       });
-
-      return;
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -118,15 +116,13 @@ const signup = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-const signin = async (req: Request, res: Response): Promise<void> => {
+const signin = async (req: Request, res: Response) => {
   const parse = SigninSchema.safeParse(req.body);
   if (!parse.success) {
-    res.status(400).json({
+    return res.status(400).json({
       message: "Parsing error",
       error: parse.error,
     });
-
-    return;
   }
 
   const { email, password } = parse.data as SigninInput;
@@ -134,21 +130,19 @@ const signin = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = await findUserByEmail({ email });
     if (!user) {
-      res.status(401).json({
+      return res.status(401).json({
         message: "Invalid credentials",
       });
-
-      return;
     }
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
-      res.status(401).json({
+      return res.status(401).json({
         message: "Invalid Credentials",
       });
-
-      return;
     }
+
+    await deleteAllUserRefreshTokens(user.user_id);
 
     const { accessToken, refreshToken } = await generateTokens(user.user_id);
 
@@ -161,6 +155,22 @@ const signin = async (req: Request, res: Response): Promise<void> => {
     };
 
     res.status(200).json(response);
+  } catch (err) {
+    res.status(500).json({
+      message: "Internal server Error",
+    });
+  }
+};
+
+const logout = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.user_id;
+
+    await deleteAllUserRefreshTokens(userId);
+
+    res.status(200).json({
+      message: "Logged out successfully",
+    });
   } catch (err) {
     res.status(500).json({
       message: "Internal server Error",
@@ -458,4 +468,5 @@ export {
   resendOtp,
   verifyOtp,
   resetPassword,
+  logout,
 };

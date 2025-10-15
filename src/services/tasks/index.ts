@@ -11,6 +11,7 @@ import {
   softDeleteTasksByDate,
   TASKS_NAMESPACE,
   updateTaskDao,
+  updateTaskDaoForSync,
 } from "./dao";
 import {
   CreateTaskInput,
@@ -364,7 +365,7 @@ const syncTasks = async (req: Request, res: Response) => {
       }
 
       if (existingTask) {
-        await updateTaskDao(
+        await updateTaskDaoForSync(
           user_id,
           task.task_id,
           {

@@ -37,4 +37,4 @@ function rateLimitApi(options?: {
   };
 }
 
-export { rateLimitApi, rateLimiter };
+export { rateLimitApi };

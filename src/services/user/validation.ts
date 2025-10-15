@@ -91,6 +91,7 @@ const ResetPasswordSchema = z
     newPassword: z
       .string()
       .min(6, "Password must be at least 6 characters")
+      .max(50, "Password cannot exceed 50 characters")
       .refine((val) => /[A-Z]/.test(val), {
         message: "Password must include at least one uppercase letter",
       })
@@ -100,7 +101,10 @@ const ResetPasswordSchema = z
       .refine((val) => /[!@#$%^&*(),.?":{}|<>]/.test(val), {
         message: "Password must include at least one special character",
       }),
-    confirmPassword: z.string().min(6),
+    confirmPassword: z
+      .string()
+      .min(6, "Confirm password is required")
+      .max(50, "Password cannot exceed 50 characters"),
   })
   .refine((d) => d.newPassword === d.confirmPassword, {
     path: ["confirmPassword"],

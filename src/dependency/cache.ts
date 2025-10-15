@@ -7,6 +7,7 @@ type CacheType = {
   set: (key: string, value: any, ttl?: number) => Promise<void>;
   get: <T = any>(key: string) => Promise<T | null>;
   del: (key: string | string[]) => Promise<number>;
+  scan: (pattern: string) => Promise<string[]>;
 };
 
 const CACHE: CacheType = {
@@ -56,6 +57,36 @@ const CACHE: CacheType = {
     } catch (err) {
       console.error("Redis delete error:", err);
       return 0;
+    }
+  },
+  scan: async (pattern: string): Promise<string[]> => {
+    const redisClient: Redis = getDependencies().redisClient;
+
+    if (!redisClient) {
+      return [];
+    }
+
+    const keys: string[] = [];
+    let cursor = "0";
+
+    try {
+      do {
+        const [nextCursor, foundKeys] = await redisClient.scan(
+          cursor,
+          "MATCH",
+          pattern,
+          "COUNT",
+          50,
+        );
+
+        cursor = nextCursor;
+        keys.push(...foundKeys);
+      } while (cursor !== "0");
+
+      return keys;
+    } catch (err) {
+      console.error("Redis Scan error:", err);
+      return [];
     }
   },
 };

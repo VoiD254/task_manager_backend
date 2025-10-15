@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   forgotPassword,
   getProfile,
+  logout,
   refresh,
   resendOtp,
   resetPassword,
@@ -17,6 +18,7 @@ const router = Router();
 
 router.post("/signup", rateLimitApi({ maxRequests: 10 }), signup);
 router.post("/signin", rateLimitApi({ maxRequests: 10 }), signin);
+router.post("/logout", authenticate, rateLimitApi({ maxRequests: 10 }), logout);
 router.get(
   "/getProfile",
   authenticate,
