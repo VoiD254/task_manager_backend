@@ -419,11 +419,14 @@ const syncTasks = async (req: Request, res: Response) => {
       invalidateCache(user_id, date);
     }
 
+    const getAllTasks = await getTasksByUserId(user_id);
+
     return res.status(200).json({
       message: "Sync completed successfully",
       syncCount: syncedTasks.length,
       hardDeletedCount: hardDeletedTasks.length,
-      syncedTasks,
+      synced: syncedTasks,
+      tasks: getAllTasks
     });
   } catch (error) {
     await client.query("ROLLBACK");

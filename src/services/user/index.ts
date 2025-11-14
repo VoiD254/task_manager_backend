@@ -77,7 +77,7 @@ const signup = async (req: Request, res: Response) => {
   if (!parse.success) {
     return res.status(400).json({
       message: "Parsing error",
-      error: parse.error,
+      error: parse.error.errors,
     });
   }
 
@@ -121,7 +121,7 @@ const signin = async (req: Request, res: Response) => {
   if (!parse.success) {
     return res.status(400).json({
       message: "Parsing error",
-      error: parse.error,
+      errors: parse.error.errors,
     });
   }
 
