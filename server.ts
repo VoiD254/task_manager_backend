@@ -1,56 +1,115 @@
-import express, {
-  NextFunction,
-  Request,
-  RequestHandler,
-  Response,
-} from "express";
+import express, { NextFunction, Request, RequestHandler, Response } from "express";
 import tasksRoutes from "./src/route/tasks";
 import userRoutes from "./src/route/user";
 import configuration from "./configuration";
-import { initializeAppEnvironment } from "./src/dependency";
+import { initializeAppEnvironment, closeAppEnvironment } from "./src/dependency";
 import cors from "cors";
 import morgan from "morgan";
 import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
 const app = express();
 
-app.use(express.json());
+app.use(express.json({ limit: "50kb" }));
 app.use(express.urlencoded({ extended: true }));
-app.use(morgan("combined"));
-app.use(cors());
 app.use(helmet());
 
-const asyncHandler =
+const allowedOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (allowedOrigins.length === 0) return cb(null, true);
+      return allowedOrigins.includes(origin) ? cb(null, true) : cb(new Error("CORS not allowed"));
+    },
+    credentials: true,
+  })
+);
+
+if (configuration.NODE_ENV !== "production") {
+  app.use(morgan("dev"));
+} else {
+  app.use(morgan("combined"));
+}
+
+const limiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 200,
+});
+app.use(limiter);
+
+export const asyncHandler =
   (fn: RequestHandler) => (req: Request, res: Response, next: NextFunction) =>
     Promise.resolve(fn(req, res, next)).catch(next);
 
-app.use("/api/v1/user", asyncHandler(userRoutes));
-app.use("/api/v1/tasks", asyncHandler(tasksRoutes));
-console.log("User routes loaded!");
+app.use("/api/v1/user", userRoutes);
+app.use("/api/v1/tasks", tasksRoutes);
 
-app.get("/", (req, res) => {
-  res.send("Welcome to the Task manager app server!");
-});
+app.get("/health", (_req, res) => res.status(200).json({ status: "ok" }));
+app.get("/ready", (_req, res) => res.status(200).json({ ready: true }));
 
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ message: "Route not found" });
 });
 
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ message: "Something went wrong!" });
+  const msg = configuration.NODE_ENV === "production" ? "Something went wrong!" : err.message;
+  console.error(err);
+  res.status(500).json({ message: msg });
 });
 
-initializeAppEnvironment()
-  .then(() => {
-    console.log("All Dependencies Initialized");
-    app.listen(configuration.PORT, () => {
-      console.log(
-        `Task manager worker ${process.pid} is listening at http://${configuration.HOST}:${configuration.PORT}`,
-      );
+let server: ReturnType<typeof app.listen> | null = null;
+let cleanup: (() => Promise<void>) | null = null;
+
+async function start() {
+  try {
+    const envInitResult = await initializeAppEnvironment();
+    cleanup =
+      envInitResult && typeof (envInitResult as any).close === "function"
+        ? async () => (envInitResult as any).close()
+        : typeof closeAppEnvironment === "function"
+        ? closeAppEnvironment
+        : null;
+
+    const port = Number(configuration.PORT) || 3000;
+    server = app.listen(port, "0.0.0.0", () => {
+      console.log(`Server running at http://${configuration.HOST || "0.0.0.0"}:${port}`);
     });
-  })
-  .catch((error) => {
+
+    const graceful = async (signal?: string) => {
+      console.info(`Shutting down${signal ? " (" + signal + ")" : ""}...`);
+      if (server) {
+        server.close(() => {
+          console.log("HTTP server closed");
+        });
+      }
+      try {
+        if (cleanup) await cleanup();
+      } catch (e) {
+        console.error("Error during cleanup:", e);
+      } finally {
+        process.exit(0);
+      }
+    };
+
+    process.on("SIGTERM", () => graceful("SIGTERM"));
+    process.on("SIGINT", () => graceful("SIGINT"));
+    process.on("uncaughtException", (err) => {
+      console.error("Uncaught exception:", err);
+      graceful("uncaughtException");
+    });
+    process.on("unhandledRejection", (reason) => {
+      console.error("Unhandled rejection:", reason);
+      graceful("unhandledRejection");
+    });
+  } catch (error) {
     console.error("Failed to initialize dependencies:", error);
     process.exit(1);
-  });
+  }
+}
+
+start();

@@ -8,20 +8,29 @@ function connectRedis() {
     throw new Error("REDIS_URI is not set in environment variables");
   }
 
-  if (redis) {
-    return redis;
-  }
+  const isProduction = process.env.NODE_ENV === "production";
+  const needsTLS =
+    configuration.REDIS_URI.startsWith("rediss://") || isProduction;
 
-  if (process.env.NODE_ENV !== "production") {
+  const redisOptions = needsTLS
+    ? {
+        tls: {
+          rejectUnauthorized: false, // Required for many managed Redis providers
+        },
+      }
+    : {};
+
+  // ---------- DEVELOPMENT (HOT RELOAD SAFE) ----------
+  if (!isProduction) {
     if (!(global as any)._redis) {
-      (global as any)._redis = new Redis(configuration.REDIS_URI);
+      (global as any)._redis = new Redis(configuration.REDIS_URI, redisOptions);
 
       (global as any)._redis.on("connect", () =>
-        console.log("Connected to Redis (dev hot reload)"),
+        console.log("Connected to Redis (development)")
       );
 
       (global as any)._redis.on("error", (err: any) =>
-        console.error("Redis connection error (dev):", err),
+        console.error("Redis connection error (dev):", err)
       );
     }
 
@@ -29,14 +38,15 @@ function connectRedis() {
     return redis;
   }
 
-  redis = new Redis(configuration.REDIS_URI);
+  // ---------- PRODUCTION ----------
+  redis = new Redis(configuration.REDIS_URI, redisOptions);
 
   redis.on("connect", () => {
-    console.log("Connected to Redis");
+    console.log("Connected to Redis (production)");
   });
 
   redis.on("error", (err) => {
-    console.error("Redis connection error:", err);
+    console.error("Redis connection error (prod):", err);
   });
 
   return redis;
